@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple Currency Calculator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <h1>Currency Calculator</h1>
+
+    <div class="card">
+      <div class="row">
+        <label for="amount">Amount</label>
+        <input id="amount" type="number" min="0" step="any" value="1" />
+      </div>
+
+      <div class="row selectors">
+        <div>
+          <label for="from">From</label>
+          <select id="from"></select>
+        </div>
+        <button id="swap" title="Swap currencies">⇄</button>
+        <div>
+          <label for="to">To</label>
+          <select id="to"></select>
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="convert">Convert</button>
+        <div id="loading" class="loading" aria-hidden="true">Loading…</div>
+      </div>
+
+      <div id="result" class="result" aria-live="polite"></div>
+      <div id="meta" class="meta"></div>
+      <div id="error" class="error" role="alert"></div>
+    </div>
+
+    <footer class="footer">
+      Powered by exchangerate.host (with fallback). Works offline with cached rates.
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
