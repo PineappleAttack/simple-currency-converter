@@ -76,6 +76,40 @@ function writeCache(obj) {
   }
 }
 
+const CURRENCY_NAMES = {
+  AUD: 'Australian Dollar',
+  BGN: 'Bulgarian Lev',
+  BRL: 'Brazilian Real',
+  CAD: 'Canadian Dollar',
+  CHF: 'Swiss Franc',
+  CNY: 'Chinese Renminbi',
+  CZK: 'Czech Koruna',
+  DKK: 'Danish Krone',
+  EUR: 'Euro',
+  GBP: 'British Pound',
+  HKD: 'Hong Kong Dollar',
+  HUF: 'Hungarian Forint',
+  IDR: 'Indonesian Rupiah',
+  ILS: 'Israeli Shekel',
+  INR: 'Indian Rupee',
+  ISK: 'Icelandic Króna',
+  JPY: 'Japanese Yen',
+  KRW: 'South Korean Won',
+  MXN: 'Mexican Peso',
+  MYR: 'Malaysian Ringgit',
+  NOK: 'Norwegian Krone',
+  NZD: 'New Zealand Dollar',
+  PHP: 'Philippine Peso',
+  PLN: 'Polish Złoty',
+  RON: 'Romanian Leu',
+  SEK: 'Swedish Krona',
+  SGD: 'Singapore Dollar',
+  THB: 'Thai Baht',
+  TRY: 'Turkish Lira',
+  USD: 'US Dollar',
+  ZAR: 'South African Rand'
+};
+
 function populateSelectorsFromList(list) {
   const prevFrom = fromSel.value;
   const prevTo = toSel.value;
@@ -83,12 +117,13 @@ function populateSelectorsFromList(list) {
   fromSel.innerHTML = '';
   toSel.innerHTML = '';
   list.forEach(c => {
+    const label = CURRENCY_NAMES[c] ? `${c} – ${CURRENCY_NAMES[c]}` : c;
     const o1 = document.createElement('option');
-    o1.value = c; o1.textContent = c;
+    o1.value = c; o1.textContent = label;
     fromSel.appendChild(o1);
 
     const o2 = document.createElement('option');
-    o2.value = c; o2.textContent = c;
+    o2.value = c; o2.textContent = label;
     toSel.appendChild(o2);
   });
 
@@ -246,7 +281,12 @@ async function convert() {
   resultDiv.textContent = '';
   metaDiv.textContent = '';
 
-  const amount = parseFloat(amountInput.value);
+  const amountVal = amountInput.value.trim();
+  if (amountVal === '') {
+    return;
+  }
+
+  const amount = parseFloat(amountVal);
   if (!isFinite(amount) || amount < 0) {
     errorDiv.textContent = 'Enter a valid non-negative amount.';
     return;
@@ -254,7 +294,7 @@ async function convert() {
   const from = fromSel.value;
   const to = toSel.value;
   if (from === to) {
-    resultDiv.textContent = `${amount.toLocaleString()} ${from} = ${amount.toLocaleString()} ${to}`;
+    resultDiv.textContent = `${amount.toLocaleString()} ${from} = ${amount.toLocaleString()} ${to} (1 ${from} = 1 ${to})`;
     return;
   }
 
@@ -265,8 +305,12 @@ async function convert() {
   try {
     await ensureRates();
     const { converted, rate } = convertUsingRates(amount, from, to, currentRates);
-    const maxFrac = converted < 1 ? 6 : 2;
-    resultDiv.textContent = `${amount.toLocaleString()} ${from} = ${converted.toLocaleString(undefined, { maximumFractionDigits: maxFrac })} ${to}`;
+    const maxFrac = converted < 1 ? 4 : 2;
+    const rateFrac = rate < 1 ? 4 : 4;
+    const formattedConverted = converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: maxFrac });
+    const formattedRate = rate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: rateFrac });
+
+    resultDiv.textContent = `${amount.toLocaleString()} ${from} = ${formattedConverted} ${to} (1 ${from} = ${formattedRate} ${to})`;
 
     // Refresh the meta UI from the stored cache so the UI shows the exact stored timestamps/version
     const cache = readCache();
@@ -285,12 +329,23 @@ swapBtn.addEventListener('click', () => {
   const a = fromSel.value;
   fromSel.value = toSel.value;
   toSel.value = a;
+  convert();
 });
+
+// Convert button click
+convertBtn.addEventListener('click', convert);
 
 // Enter key triggers convert
 amountInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') convert();
 });
+
+// Live conversion on input or currency changes
+amountInput.addEventListener('input', () => {
+  convert();
+});
+fromSel.addEventListener('change', convert);
+toSel.addEventListener('change', convert);
 
 // Initialize
 (async function init() {
@@ -313,6 +368,7 @@ amountInput.addEventListener('keydown', (e) => {
 
   await ensureRates();
   buildCurrencyList();
+  convert();
 
   loading.style.display = 'none';
   loading.setAttribute('aria-hidden', 'true');
